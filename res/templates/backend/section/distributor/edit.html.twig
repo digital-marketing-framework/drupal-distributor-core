@@ -1,0 +1,9 @@
+{# Distributor Job Edit Template - Drupal #}
+{% extends "module.html.twig" %}
+
+{% block section %}
+    <div class="dmf-distributor-job-edit">
+        {# Output the Drupal form HTML (rendered by JobForm) #}
+        {{ formHtml|raw }}
+    </div>
+{% endblock %}

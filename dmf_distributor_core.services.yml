@@ -1,0 +1,46 @@
+services:
+  _defaults:
+    autowire: false
+    autoconfigure: false
+    public: false
+
+  # Distributor Registry
+  dmf_distributor_core.registry:
+    class: Drupal\dmf_distributor_core\Registry\Registry
+    arguments:
+      - '@event_dispatcher'
+
+  # Job Repository (Queue)
+  dmf_distributor_core.job_repository:
+    class: Drupal\dmf_distributor_core\Entity\JobRepository
+    arguments:
+      - '@entity_type.manager'
+      - '@database'
+
+  # Event Subscribers
+  dmf_distributor_core.event_subscriber.registry_collection:
+    class: Drupal\dmf_distributor_core\Registry\EventSubscriber\RegistryCollectionEventSubscriber
+    arguments:
+      - '@dmf_distributor_core.registry'
+    tags:
+      - { name: event_subscriber }
+    public: true
+
+  dmf_distributor_core.event_subscriber.core_registry_update:
+    class: Drupal\dmf_distributor_core\Registry\EventSubscriber\CoreRegistryUpdateEventSubscriber
+    arguments:
+      - '@entity.form_builder'
+      - '@entity_type.manager'
+      - '@renderer'
+    tags:
+      - { name: event_subscriber }
+    public: true
+
+  dmf_distributor_core.event_subscriber.distributor_registry_update:
+    class: Drupal\dmf_distributor_core\Registry\EventSubscriber\DistributorRegistryUpdateEventSubscriber
+    arguments:
+      - '@dmf_distributor_core.job_repository'
+      - '@entity_type.manager'
+    tags:
+      - { name: event_subscriber }
+    public: true

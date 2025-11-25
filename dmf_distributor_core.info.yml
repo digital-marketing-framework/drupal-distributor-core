@@ -1,0 +1,8 @@
+name: 'Anyrel Distributor'
+type: module
+description: 'Distributor integration for Anyrel'
+core_version_requirement: ^10 || ^11
+package: 'Anyrel'
+dependencies:
+  - dmf_core
+  - webform

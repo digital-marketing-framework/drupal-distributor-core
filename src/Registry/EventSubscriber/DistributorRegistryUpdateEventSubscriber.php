@@ -1,0 +1,58 @@
+<?php
+
+namespace Drupal\dmf_distributor_core\Registry\EventSubscriber;
+
+use DigitalMarketingFramework\Distributor\Core\DistributorCoreInitialization;
+use DigitalMarketingFramework\Distributor\Core\Registry\RegistryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\dmf_distributor_core\DataSource\DrupalWebformDataSourceStorage;
+use Drupal\dmf_distributor_core\Entity\JobRepository;
+
+/**
+ * Event subscriber for distributor registry updates.
+ */
+class DistributorRegistryUpdateEventSubscriber extends AbstractDistributorRegistryUpdateEventSubscriber
+{
+    /**
+     * Constructs a DistributorRegistryUpdateEventSubscriber object.
+     *
+     * @param \Drupal\dmf_distributor_core\Entity\JobRepository $queue
+     *   The job repository (queue).
+     * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+     *   The entity type manager.
+     */
+    public function __construct(
+        protected JobRepository $queue,
+        protected EntityTypeManagerInterface $entityTypeManager,
+    ) {
+        $initialization = new DistributorCoreInitialization('dmf_distributor_core');
+        parent::__construct($initialization);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function initServices(RegistryInterface $registry): void
+    {
+        parent::initServices($registry);
+
+        // Register the persistent queue (JobRepository).
+        // The repository handles conversion between Drupal entities (storage)
+        // and core Job objects (business logic/templates).
+        $registry->setPersistentQueue($this->queue);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function initPlugins(RegistryInterface $registry): void
+    {
+        parent::initPlugins($registry);
+
+        // Register Drupal webform data source storage
+        $registry->registerDistributorSourceStorage(
+            DrupalWebformDataSourceStorage::class,
+            [$this->entityTypeManager]
+        );
+    }
+}
