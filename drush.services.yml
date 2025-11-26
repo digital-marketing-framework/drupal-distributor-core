@@ -1,0 +1,7 @@
+services:
+  dmf_distributor_core.commands.work:
+    class: Drupal\dmf_distributor_core\Commands\DistributorWorkCommand
+    arguments:
+      - '@dmf_core.registry_collection'
+    tags:
+      - { name: drush.command }

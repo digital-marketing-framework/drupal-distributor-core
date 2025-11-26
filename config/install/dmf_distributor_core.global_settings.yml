@@ -1,0 +1,24 @@
+# Default global settings for Anyrel Distributor Core
+# These values are installed when the module is enabled
+# Runtime values are stored in the database and can be modified via the configuration editor
+
+queue:
+  processorBatchSize: 10
+  expirationTime: 30
+  cleanupDoneOnly: true
+  maxExecutionTime: 600
+  recogniseStuckJobs: false
+  rerunEnabled: false
+  rerunFailedJobsAmount: 3
+  rerunDelay: 300
+  cronEnabled: false
+  cronMinInterval: 60
+
+fileUpload:
+  disableProcessing: false
+  baseUploadPath: 'uploads/digital_marketing_framework/form_uploads/'
+  prohibitedExtension: 'php,exe'
+
+debug:
+  enabled: false
+  file: 'ditigal-marketing-framework-distributor-submission.log'

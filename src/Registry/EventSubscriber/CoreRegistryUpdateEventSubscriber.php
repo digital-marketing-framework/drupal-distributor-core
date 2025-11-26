@@ -4,12 +4,12 @@ namespace Drupal\dmf_distributor_core\Registry\EventSubscriber;
 
 use DigitalMarketingFramework\Core\Registry\RegistryInterface;
 use DigitalMarketingFramework\Distributor\Core\DistributorCoreInitialization;
-use DigitalMarketingFramework\Distributor\Core\GlobalConfiguration\Schema\DistributorCoreGlobalConfigurationSchema;
 use Drupal\Core\Entity\EntityFormBuilderInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\dmf_core\Registry\EventSubscriber\AbstractCoreRegistryUpdateEventSubscriber;
 use Drupal\dmf_distributor_core\Backend\Controller\SectionController\DistributorEditSectionController;
+use Drupal\dmf_distributor_core\GlobalConfiguration\Schema\DistributorCoreGlobalConfigurationSchema;
 
 /**
  * Event subscriber for Core registry updates from distributor package.
@@ -24,8 +24,10 @@ class CoreRegistryUpdateEventSubscriber extends AbstractCoreRegistryUpdateEventS
         protected EntityTypeManagerInterface $entityTypeManager,
         protected RendererInterface $renderer,
     ) {
-        $initialization = new DistributorCoreInitialization('dmf_distributor_core');
-        $initialization->setGlobalConfigurationSchema(new DistributorCoreGlobalConfigurationSchema());
+        $initialization = new DistributorCoreInitialization(
+            'dmf_distributor_core',
+            new DistributorCoreGlobalConfigurationSchema()
+        );
         parent::__construct($initialization);
     }
 

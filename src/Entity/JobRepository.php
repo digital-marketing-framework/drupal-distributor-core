@@ -3,10 +3,12 @@
 namespace Drupal\dmf_distributor_core\Entity;
 
 use DateTime;
+use DigitalMarketingFramework\Core\Model\Queue\Error;
 use DigitalMarketingFramework\Core\Model\Queue\Job as CoreJob;
 use DigitalMarketingFramework\Core\Model\Queue\JobInterface;
 use DigitalMarketingFramework\Core\Queue\QueueInterface;
 use DigitalMarketingFramework\Core\SchemaDocument\Schema\ContainerSchema;
+use DigitalMarketingFramework\Core\Utility\QueueUtility;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
@@ -527,11 +529,34 @@ class JobRepository implements QueueInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @param array{minCreated:?DateTime,maxCreated:?DateTime,minChanged:?DateTime,maxChanged:?DateTime} $filters
+     * @param array{page:int,itemsPerPage:int,sorting:array<string,string>} $navigation
+     *
+     * @return array<Error>
      */
     public function getErrorMessages(array $filters, array $navigation): array
     {
-        // TODO: Implement error message gathering
-        return [];
+        // Fetch all failed jobs (applying timeframe filters)
+        $failedJobs = $this->fetchFiltered(
+            array_merge($filters, ['status' => [QueueInterface::STATUS_FAILED]])
+        );
+
+        // Use core utility to aggregate errors by message
+        $result = QueueUtility::getErrorStatistics($failedJobs, true);
+
+        // Apply sorting from navigation
+        QueueUtility::applyNavigationToErrorStatistics($result, $navigation);
+
+        // Apply pagination
+        if (($navigation['itemsPerPage'] ?? 0) > 0) {
+            $limit = $navigation['itemsPerPage'];
+            $offset = $navigation['itemsPerPage'] * ($navigation['page'] ?? 0);
+            $result = array_slice($result, $offset, $limit);
+        }
+
+        // Convert to Error objects
+        return array_map(static fn (array $data) => Error::fromDataRecord($data), $result);
     }
 
     /**

@@ -1,0 +1,107 @@
+# Global configuration schema for dmf_distributor_core module
+# This defines the structure of dmf_distributor_core.global_settings config object
+# Based on DigitalMarketingFramework\Distributor\Core\GlobalConfiguration\Schema\DistributorCoreGlobalConfigurationSchema
+
+dmf_distributor_core.global_settings:
+  type: config_object
+  label: 'Anyrel Distributor Core - Global Settings'
+  mapping:
+    queue:
+      type: mapping
+      label: 'Queue'
+      mapping:
+        processorBatchSize:
+          type: integer
+          label: 'Async processing batch size'
+        expirationTime:
+          type: integer
+          label: 'Expiration time (in days)'
+        cleanupDoneOnly:
+          type: boolean
+          label: 'Cleanup only jobs with status "done"'
+        maxExecutionTime:
+          type: integer
+          label: 'Maximum execution time (in seconds)'
+        recogniseStuckJobs:
+          type: boolean
+          label: 'Recognise stuck jobs and mark them as failed'
+        rerunEnabled:
+          type: boolean
+          label: 'Enable re-running failed jobs'
+        rerunFailedJobsAmount:
+          type: integer
+          label: 'Number of times to re-run failed jobs'
+        rerunDelay:
+          type: integer
+          label: 'Delay before re-running failed jobs (in seconds)'
+        cronEnabled:
+          type: boolean
+          label: 'Enable cron task'
+        cronMinInterval:
+          type: integer
+          label: 'Minimum cron interval (in seconds)'
+    fileUpload:
+      type: mapping
+      label: 'File Upload'
+      mapping:
+        disableProcessing:
+          type: boolean
+          label: 'Disable processing'
+        baseUploadPath:
+          type: string
+          label: 'Base upload path'
+        prohibitedExtension:
+          type: string
+          label: 'Prohibited extensions'
+    debug:
+      type: mapping
+      label: 'Debug'
+      mapping:
+        enabled:
+          type: boolean
+          label: 'Enabled'
+        file:
+          type: string
+          label: 'Log file'
+
+# Distributor Job entity schema
+dmf_distributor_core.dmf_distributor_job.*:
+  type: config_entity
+  label: 'Distributor Job'
+  mapping:
+    id:
+      type: string
+      label: 'ID'
+    created:
+      type: integer
+      label: 'Created timestamp'
+    changed:
+      type: integer
+      label: 'Changed timestamp'
+    status:
+      type: integer
+      label: 'Status'
+    skipped:
+      type: boolean
+      label: 'Skipped'
+    status_message:
+      type: string
+      label: 'Status message'
+    serialized:
+      type: boolean
+      label: 'Serialized'
+    data:
+      type: text
+      label: 'Job data'
+    label:
+      type: string
+      label: 'Label'
+    hash:
+      type: string
+      label: 'Hash'
+    route:
+      type: string
+      label: 'Route'
+    pass:
+      type: string
+      label: 'Pass'

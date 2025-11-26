@@ -7,6 +7,7 @@ use DigitalMarketingFramework\Distributor\Core\Registry\RegistryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\dmf_distributor_core\DataSource\DrupalWebformDataSourceStorage;
 use Drupal\dmf_distributor_core\Entity\JobRepository;
+use Drupal\dmf_distributor_core\GlobalConfiguration\Schema\DistributorCoreGlobalConfigurationSchema;
 
 /**
  * Event subscriber for distributor registry updates.
@@ -25,7 +26,10 @@ class DistributorRegistryUpdateEventSubscriber extends AbstractDistributorRegist
         protected JobRepository $queue,
         protected EntityTypeManagerInterface $entityTypeManager,
     ) {
-        $initialization = new DistributorCoreInitialization('dmf_distributor_core');
+        $initialization = new DistributorCoreInitialization(
+            'dmf_distributor_core',
+            new DistributorCoreGlobalConfigurationSchema()
+        );
         parent::__construct($initialization);
     }
 

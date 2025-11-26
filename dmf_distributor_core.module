@@ -1,0 +1,60 @@
+<?php
+
+/**
+ * @file
+ * Anyrel Distributor Core module functions.
+ */
+
+use DigitalMarketingFramework\Distributor\Core\Registry\RegistryInterface;
+use Drupal\dmf_distributor_core\Queue\GlobalConfiguration\Settings\QueueSettings;
+
+/**
+ * Implements hook_cron().
+ *
+ * Processes queued Anyrel distribution jobs on cron runs.
+ *
+ * This can be enabled/disabled and the minimum interval configured
+ * in Anyrel's global configuration under Distributor > Queue settings.
+ */
+function dmf_distributor_core_cron(): void {
+  try {
+    /** @var \Drupal\dmf_core\Registry\RegistryCollection $registryCollection */
+    $registryCollection = \Drupal::service('dmf_core.registry_collection');
+
+    /** @var RegistryInterface $registry */
+    $registry = $registryCollection->getRegistryByClass(RegistryInterface::class);
+
+    // Get queue settings to check if cron is enabled and get min interval.
+    /** @var QueueSettings $queueSettings */
+    $queueSettings = $registry->getGlobalConfiguration()->getGlobalSettings(QueueSettings::class);
+
+    // Check if cron task is enabled.
+    if (!$queueSettings->isCronEnabled()) {
+      return;
+    }
+
+    // Check minimum interval since last run.
+    $lastRun = \Drupal::state()->get('dmf_distributor_core.last_cron_run', 0);
+    $minInterval = $queueSettings->getCronMinInterval();
+
+    if (time() - $lastRun < $minInterval) {
+      return;
+    }
+
+    // Update timestamp before processing.
+    \Drupal::state()->set('dmf_distributor_core.last_cron_run', time());
+
+    // Process the queue.
+    $queueProcessor = $registry->getQueueProcessor(
+      $registry->getPersistentQueue(),
+      $registry->getDistributor()
+    );
+    $queueProcessor->updateJobsAndProcessBatch();
+  }
+  catch (\Exception $e) {
+    \Drupal::logger('dmf_distributor_core')->error(
+      'Error processing distribution queue during cron: @message',
+      ['@message' => $e->getMessage()]
+    );
+  }
+}
