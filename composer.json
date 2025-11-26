@@ -26,8 +26,9 @@
         "php": "^8.1",
         "drupal/core": "^10 || ^11",
         "drupal/webform": "^6.2",
-        "digital-marketing-framework/distributor-core": "*",
-        "digital-marketing-framework/drupal-core": "*",
+        "digital-marketing-framework/distributor-core": "^3.3",
+        "digital-marketing-framework/drupal-core": "^1.0",
+        "digital-marketing-framework/drupal-template-engine-twig": "^1.0",
         "composer/installers": "^1.0 || ^2.0"
     },
     "autoload": {
