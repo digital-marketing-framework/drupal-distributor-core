@@ -643,12 +643,9 @@ class JobRepository implements QueueInterface
     {
         $storage = $this->getStorage();
         $query = $storage->getQuery()
-            ->accessCheck(FALSE)
-            ->sort('created', 'ASC');
+            ->accessCheck(FALSE);
 
-        if ($navigation) {
-            $this->applyNavigation($query, $navigation);
-        }
+        $this->applyNavigation($query, $navigation);
 
         $ids = $query->execute();
         return $this->entitiesToJobs($storage->loadMultiple($ids));
@@ -676,14 +673,10 @@ class JobRepository implements QueueInterface
     {
         $storage = $this->getStorage();
         $query = $storage->getQuery()
-            ->accessCheck(FALSE)
-            ->sort('created', 'ASC');
+            ->accessCheck(FALSE);
 
         $this->applyFilters($query, $filters);
-
-        if ($navigation) {
-            $this->applyNavigation($query, $navigation);
-        }
+        $this->applyNavigation($query, $navigation);
 
         $ids = $query->execute();
         return $this->entitiesToJobs($storage->loadMultiple($ids));
