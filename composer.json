@@ -39,6 +39,8 @@
             "url": "https://packages.drupal.org/8"
         }
     ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "autoload": {
         "psr-4": {
             "Drupal\\dmf_distributor_core\\": "src/"
