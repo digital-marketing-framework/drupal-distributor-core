@@ -17,8 +17,8 @@ abstract class AbstractDistributorRegistryUpdateEventSubscriber implements Event
     /**
      * Constructs an AbstractDistributorRegistryUpdateEventSubscriber object.
      *
-     * @param \DigitalMarketingFramework\Core\InitializationInterface $initialization
-     *   The initialization service.
+     * @param InitializationInterface $initialization
+     *   The initialization service
      */
     public function __construct(
         protected InitializationInterface $initialization,
@@ -38,8 +38,8 @@ abstract class AbstractDistributorRegistryUpdateEventSubscriber implements Event
     /**
      * Initializes global configuration.
      *
-     * @param \DigitalMarketingFramework\Distributor\Core\Registry\RegistryInterface $registry
-     *   The distributor registry.
+     * @param RegistryInterface $registry
+     *   The distributor registry
      */
     protected function initGlobalConfiguration(RegistryInterface $registry): void
     {
@@ -49,8 +49,8 @@ abstract class AbstractDistributorRegistryUpdateEventSubscriber implements Event
     /**
      * Initializes services.
      *
-     * @param \DigitalMarketingFramework\Distributor\Core\Registry\RegistryInterface $registry
-     *   The distributor registry.
+     * @param RegistryInterface $registry
+     *   The distributor registry
      */
     protected function initServices(RegistryInterface $registry): void
     {
@@ -60,8 +60,8 @@ abstract class AbstractDistributorRegistryUpdateEventSubscriber implements Event
     /**
      * Initializes plugins.
      *
-     * @param \DigitalMarketingFramework\Distributor\Core\Registry\RegistryInterface $registry
-     *   The distributor registry.
+     * @param RegistryInterface $registry
+     *   The distributor registry
      */
     protected function initPlugins(RegistryInterface $registry): void
     {
@@ -71,8 +71,8 @@ abstract class AbstractDistributorRegistryUpdateEventSubscriber implements Event
     /**
      * Handles registry update event.
      *
-     * @param \Drupal\dmf_distributor_core\Registry\Event\DistributorRegistryUpdateEvent $event
-     *   The event.
+     * @param DistributorRegistryUpdateEvent $event
+     *   The event
      */
     public function onRegistryUpdate(DistributorRegistryUpdateEvent $event): void
     {
@@ -87,9 +87,11 @@ abstract class AbstractDistributorRegistryUpdateEventSubscriber implements Event
             case RegistryUpdateType::GLOBAL_CONFIGURATION:
                 $this->initGlobalConfiguration($registry);
                 break;
+
             case RegistryUpdateType::SERVICE:
                 $this->initServices($registry);
                 break;
+
             case RegistryUpdateType::PLUGIN:
                 $this->initPlugins($registry);
                 break;

@@ -12,7 +12,7 @@ use Drush\Commands\DrushCommands;
 class DistributorWorkCommand extends DrushCommands
 {
     public function __construct(
-        protected RegistryCollection $registryCollection
+        protected RegistryCollection $registryCollection,
     ) {
         parent::__construct();
     }
@@ -21,7 +21,9 @@ class DistributorWorkCommand extends DrushCommands
      * Process queued Anyrel distribution jobs.
      *
      * @command anyrel:distributor-work
+     *
      * @aliases anyrel-distributor-work
+     *
      * @usage anyrel:distributor-work
      *   Process queued distribution jobs.
      */

@@ -10,6 +10,9 @@ use DigitalMarketingFramework\Core\Queue\QueueInterface;
 use DigitalMarketingFramework\Core\SchemaDocument\Schema\ContainerSchema;
 use DigitalMarketingFramework\Core\Utility\QueueUtility;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Database\Query\SelectInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
@@ -26,9 +29,9 @@ class JobRepository implements QueueInterface
      * Constructs a JobRepository object.
      *
      * @param EntityTypeManagerInterface $entityTypeManager
-     *   The entity type manager.
+     *   The entity type manager
      * @param Connection $database
-     *   The database connection.
+     *   The database connection
      */
     public function __construct(
         protected EntityTypeManagerInterface $entityTypeManager,
@@ -39,7 +42,7 @@ class JobRepository implements QueueInterface
     /**
      * Gets the entity storage.
      */
-    protected function getStorage()
+    protected function getStorage(): EntityStorageInterface
     {
         return $this->entityTypeManager->getStorage('dmf_distributor_job');
     }
@@ -48,10 +51,10 @@ class JobRepository implements QueueInterface
      * Converts a Drupal Job entity to a core Job object.
      *
      * @param Job $entity
-     *   The Drupal Job entity.
+     *   The Drupal Job entity
      *
      * @return CoreJob
-     *   The core Job object.
+     *   The core Job object
      */
     protected function entityToJob(Job $entity): CoreJob
     {
@@ -77,9 +80,9 @@ class JobRepository implements QueueInterface
      * Updates a Drupal Job entity from a core Job object.
      *
      * @param Job $entity
-     *   The Drupal Job entity to update.
+     *   The Drupal Job entity to update
      * @param JobInterface $job
-     *   The core Job object with updated values.
+     *   The core Job object with updated values
      */
     protected function updateEntityFromJob(Job $entity, JobInterface $job): void
     {
@@ -99,15 +102,16 @@ class JobRepository implements QueueInterface
     /**
      * Converts an array of Drupal Job entities to core Job objects.
      *
-     * @param array $entities
-     *   Array of Drupal Job entities.
+     * @param array<EntityInterface> $entities
+     *   Array of Drupal Job entities
      *
-     * @return array
-     *   Array of core Job objects.
+     * @return array<CoreJob>
+     *   Array of core Job objects
      */
     protected function entitiesToJobs(array $entities): array
     {
-        return array_map(fn(Job $entity) => $this->entityToJob($entity), $entities);
+        /** @var array<Job> $entities */
+        return array_map($this->entityToJob(...), $entities);
     }
 
     /**
@@ -124,9 +128,12 @@ class JobRepository implements QueueInterface
             if ($id !== null) {
                 $entity = $this->getStorage()->load($id);
             }
-            if (!isset($entity) || $entity === null) {
+
+            if (!isset($entity)) {
                 $entity = $this->getStorage()->create();
             }
+
+            /** @var Job $entity */
             $this->updateEntityFromJob($entity, $item);
             $entity->save();
             // Update ID on core job if newly created
@@ -142,7 +149,8 @@ class JobRepository implements QueueInterface
     public function fetch(int|string $id): ?JobInterface
     {
         $entity = $this->getStorage()->load($id);
-        return $entity ? $this->entityToJob($entity) : null;
+
+        return $entity instanceof Job ? $this->entityToJob($entity) : null;
     }
 
     /**
@@ -157,7 +165,7 @@ class JobRepository implements QueueInterface
             $id = $item->getId();
             if ($id !== null) {
                 $entity = $this->getStorage()->load($id);
-                if ($entity) {
+                if ($entity !== null) {
                     $entity->delete();
                 }
             }
@@ -171,10 +179,10 @@ class JobRepository implements QueueInterface
     {
         $storage = $this->getStorage();
         $query = $storage->getQuery()
-            ->accessCheck(FALSE)
-            ->sort('created', 'ASC');
+          ->accessCheck(false)
+          ->sort('created', 'ASC');
 
-        if (!empty($status)) {
+        if ($status !== []) {
             $query->condition('status', $status, 'IN');
         }
 
@@ -183,6 +191,7 @@ class JobRepository implements QueueInterface
         }
 
         $ids = $query->execute();
+
         return $this->entitiesToJobs($storage->loadMultiple($ids));
     }
 
@@ -201,9 +210,9 @@ class JobRepository implements QueueInterface
     {
         $storage = $this->getStorage();
         $query = $storage->getQuery()
-            ->accessCheck(FALSE)
-            ->condition('status', QueueInterface::STATUS_PENDING)
-            ->sort('created', 'ASC');
+          ->accessCheck(false)
+          ->condition('status', QueueInterface::STATUS_PENDING)
+          ->sort('created', 'ASC');
 
         if ($minTimeSinceChangedInSeconds > 0) {
             $timestamp = time() - $minTimeSinceChangedInSeconds;
@@ -215,6 +224,7 @@ class JobRepository implements QueueInterface
         }
 
         $ids = $query->execute();
+
         return $this->entitiesToJobs($storage->loadMultiple($ids));
     }
 
@@ -225,9 +235,9 @@ class JobRepository implements QueueInterface
     {
         $storage = $this->getStorage();
         $query = $storage->getQuery()
-            ->accessCheck(FALSE)
-            ->condition('status', QueueInterface::STATUS_RUNNING)
-            ->sort('created', 'ASC');
+          ->accessCheck(false)
+          ->condition('status', QueueInterface::STATUS_RUNNING)
+          ->sort('created', 'ASC');
 
         if ($minTimeSinceChangedInSeconds > 0) {
             $timestamp = time() - $minTimeSinceChangedInSeconds;
@@ -239,6 +249,7 @@ class JobRepository implements QueueInterface
         }
 
         $ids = $query->execute();
+
         return $this->entitiesToJobs($storage->loadMultiple($ids));
     }
 
@@ -249,9 +260,9 @@ class JobRepository implements QueueInterface
     {
         $storage = $this->getStorage();
         $query = $storage->getQuery()
-            ->accessCheck(FALSE)
-            ->condition('status', [QueueInterface::STATUS_PENDING, QueueInterface::STATUS_RUNNING], 'IN')
-            ->sort('created', 'ASC');
+          ->accessCheck(false)
+          ->condition('status', [QueueInterface::STATUS_PENDING, QueueInterface::STATUS_RUNNING], 'IN')
+          ->sort('created', 'ASC');
 
         if ($minTimeSinceChangedInSeconds > 0) {
             $timestamp = time() - $minTimeSinceChangedInSeconds;
@@ -263,6 +274,7 @@ class JobRepository implements QueueInterface
         }
 
         $ids = $query->execute();
+
         return $this->entitiesToJobs($storage->loadMultiple($ids));
     }
 
@@ -332,9 +344,11 @@ class JobRepository implements QueueInterface
         if ($message !== '') {
             $job->addStatusMessage($message);
         }
+
         if (!$preserveTimestamp) {
             $job->setChanged(new DateTime());
         }
+
         $this->save($job);
     }
 
@@ -397,16 +411,16 @@ class JobRepository implements QueueInterface
         $timestamp = time() - $minAgeInSeconds;
 
         $query = $storage->getQuery()
-            ->accessCheck(FALSE)
-            ->condition('changed', $timestamp, '<=');
+          ->accessCheck(false)
+          ->condition('changed', $timestamp, '<=');
 
-        if (!empty($status)) {
+        if ($status !== []) {
             $query->condition('status', $status, 'IN');
         }
 
         $ids = $query->execute();
 
-        if (!empty($ids)) {
+        if ($ids !== []) {
             $entities = $storage->loadMultiple($ids);
             $storage->delete($entities);
         }
@@ -437,7 +451,7 @@ class JobRepository implements QueueInterface
         $query->addExpression('COUNT(DISTINCT hash)', 'count');
         $this->applyTimeframeFiltersToDbQuery($query, $filters);
         $hashCount = $query->execute()->fetchField();
-        $result['hashes'] = (int) $hashCount;
+        $result['hashes'] = (int)$hashCount;
 
         // Group by type, status, skipped and count
         $query = $this->database->select($table, 'j');
@@ -451,10 +465,10 @@ class JobRepository implements QueueInterface
         $rows = $query->execute()->fetchAll();
 
         foreach ($rows as $row) {
-            $count = (int) $row->count;
+            $count = (int)$row->count;
             $type = $row->type;
-            $status = (int) $row->status;
-            $skipped = (bool) $row->skipped;
+            $status = (int)$row->status;
+            $skipped = (bool)$row->skipped;
 
             if (!isset($result['groupedByType'][$type])) {
                 $result['groupedByType'][$type] = [
@@ -477,14 +491,17 @@ class JobRepository implements QueueInterface
                     $result['queued'] += $count;
                     $result['groupedByType'][$type]['queued'] += $count;
                     break;
+
                 case QueueInterface::STATUS_PENDING:
                     $result['pending'] += $count;
                     $result['groupedByType'][$type]['pending'] += $count;
                     break;
+
                 case QueueInterface::STATUS_RUNNING:
                     $result['running'] += $count;
                     $result['groupedByType'][$type]['running'] += $count;
                     break;
+
                 case QueueInterface::STATUS_DONE:
                     $result['done'] += $count;
                     $result['groupedByType'][$type]['done'] += $count;
@@ -493,6 +510,7 @@ class JobRepository implements QueueInterface
                     $result[$group] += $count;
                     $result['groupedByType'][$type][$group] += $count;
                     break;
+
                 case QueueInterface::STATUS_FAILED:
                     $result['failed'] += $count;
                     $result['groupedByType'][$type]['failed'] += $count;
@@ -506,23 +524,26 @@ class JobRepository implements QueueInterface
     /**
      * Applies timeframe filters to a database query.
      *
-     * @param \Drupal\Core\Database\Query\SelectInterface $query
-     *   The database query.
-     * @param array $filters
-     *   The filters array.
+     * @param SelectInterface $query
+     *   The database query
+     * @param array<string,mixed> $filters
+     *   The filters array
      */
-    protected function applyTimeframeFiltersToDbQuery($query, array $filters): void
+    protected function applyTimeframeFiltersToDbQuery(SelectInterface $query, array $filters): void
     {
-        if (!empty($filters['minCreated']) && $filters['minCreated'] instanceof DateTime) {
+        if (($filters['minCreated'] ?? null) instanceof DateTime) {
             $query->condition('j.created', $filters['minCreated']->getTimestamp(), '>=');
         }
-        if (!empty($filters['maxCreated']) && $filters['maxCreated'] instanceof DateTime) {
+
+        if (($filters['maxCreated'] ?? null) instanceof DateTime) {
             $query->condition('j.created', $filters['maxCreated']->getTimestamp(), '<=');
         }
-        if (!empty($filters['minChanged']) && $filters['minChanged'] instanceof DateTime) {
+
+        if (($filters['minChanged'] ?? null) instanceof DateTime) {
             $query->condition('j.changed', $filters['minChanged']->getTimestamp(), '>=');
         }
-        if (!empty($filters['maxChanged']) && $filters['maxChanged'] instanceof DateTime) {
+
+        if (($filters['maxChanged'] ?? null) instanceof DateTime) {
             $query->condition('j.changed', $filters['maxChanged']->getTimestamp(), '<=');
         }
     }
@@ -549,14 +570,14 @@ class JobRepository implements QueueInterface
         QueueUtility::applyNavigationToErrorStatistics($result, $navigation);
 
         // Apply pagination
-        if (($navigation['itemsPerPage'] ?? 0) > 0) {
+        if ($navigation['itemsPerPage'] > 0) {
             $limit = $navigation['itemsPerPage'];
-            $offset = $navigation['itemsPerPage'] * ($navigation['page'] ?? 0);
+            $offset = $navigation['itemsPerPage'] * $navigation['page'];
             $result = array_slice($result, $offset, $limit);
         }
 
         // Convert to Error objects
-        return array_map(static fn (array $data) => Error::fromDataRecord($data), $result);
+        return array_map(Error::fromDataRecord(...), $result);
     }
 
     /**
@@ -566,15 +587,16 @@ class JobRepository implements QueueInterface
     {
         $storage = $this->getStorage();
         $query = $storage->getQuery()
-            ->accessCheck(FALSE);
+          ->accessCheck(false);
 
         $ids = $query->execute();
         $entities = $storage->loadMultiple($ids);
 
         $types = [];
+        /** @var Job $entity */
         foreach ($entities as $entity) {
-            $type = $entity->get('type')->value;
-            if ($type && !in_array($type, $types)) {
+            $type = $entity->getType();
+            if ($type !== '' && !in_array($type, $types, true)) {
                 $types[] = $type;
             }
         }
@@ -585,10 +607,10 @@ class JobRepository implements QueueInterface
     /**
      * {@inheritdoc}
      */
-    public function create(?array $data = null)
+    public function create(?array $data = null): Job
     {
-        $storage = $this->getStorage();
-        return $storage->create($data ?? []);
+        /** @var Job */
+        return $this->getStorage()->create($data ?? []);
     }
 
     /**
@@ -630,10 +652,10 @@ class JobRepository implements QueueInterface
     {
         $storage = $this->getStorage();
         $query = $storage->getQuery()
-            ->accessCheck(FALSE)
-            ->count();
+          ->accessCheck(false)
+          ->count();
 
-        return (int) $query->execute();
+        return $query->execute();
     }
 
     /**
@@ -643,11 +665,12 @@ class JobRepository implements QueueInterface
     {
         $storage = $this->getStorage();
         $query = $storage->getQuery()
-            ->accessCheck(FALSE);
+          ->accessCheck(false);
 
         $this->applyNavigation($query, $navigation);
 
         $ids = $query->execute();
+
         return $this->entitiesToJobs($storage->loadMultiple($ids));
     }
 
@@ -658,12 +681,12 @@ class JobRepository implements QueueInterface
     {
         $storage = $this->getStorage();
         $query = $storage->getQuery()
-            ->accessCheck(FALSE)
-            ->count();
+          ->accessCheck(false)
+          ->count();
 
         $this->applyFilters($query, $filters);
 
-        return (int) $query->execute();
+        return $query->execute();
     }
 
     /**
@@ -673,12 +696,13 @@ class JobRepository implements QueueInterface
     {
         $storage = $this->getStorage();
         $query = $storage->getQuery()
-            ->accessCheck(FALSE);
+          ->accessCheck(false);
 
         $this->applyFilters($query, $filters);
         $this->applyNavigation($query, $navigation);
 
         $ids = $query->execute();
+
         return $this->entitiesToJobs($storage->loadMultiple($ids));
     }
 
@@ -687,7 +711,8 @@ class JobRepository implements QueueInterface
      */
     public function fetchOneFiltered(array $filters, ?array $navigation = null)
     {
-        $results = $this->fetchFiltered($filters, $navigation ? array_merge($navigation, ['limit' => 1]) : ['limit' => 1]);
+        $results = $this->fetchFiltered($filters, $navigation !== null ? array_merge($navigation, ['limit' => 1]) : ['limit' => 1]);
+
         return $results[0] ?? null;
     }
 
@@ -697,6 +722,7 @@ class JobRepository implements QueueInterface
     public function fetchByIdList(array $ids): array
     {
         $storage = $this->getStorage();
+
         return $this->entitiesToJobs($storage->loadMultiple($ids));
     }
 
@@ -705,7 +731,7 @@ class JobRepository implements QueueInterface
      */
     public static function getSchema(): ContainerSchema
     {
-        // TODO: Implement schema if needed for UI
+        // @todo Implement schema if needed for UI
         return new ContainerSchema();
     }
 
@@ -713,44 +739,47 @@ class JobRepository implements QueueInterface
      * Apply filters to a query.
      *
      * @param mixed $query
-     *   The entity query.
-     * @param array $filters
-     *   The filters to apply.
+     *   The entity query
+     * @param array<string,mixed> $filters
+     *   The filters to apply
      */
     protected function applyFilters($query, array $filters): void
     {
         // Handle search filter
-        if (!empty($filters['search'])) {
+        if (isset($filters['search']) && $filters['search'] !== '') {
             $this->applySearchFilter($query, $filters);
         }
 
         // Handle timeframe filters
-        if (!empty($filters['minCreated'])) {
+        if (($filters['minCreated'] ?? null) instanceof DateTime) {
             $query->condition('created', $filters['minCreated']->getTimestamp(), '>=');
         }
-        if (!empty($filters['maxCreated'])) {
+
+        if (($filters['maxCreated'] ?? null) instanceof DateTime) {
             $query->condition('created', $filters['maxCreated']->getTimestamp(), '<=');
         }
-        if (!empty($filters['minChanged'])) {
+
+        if (($filters['minChanged'] ?? null) instanceof DateTime) {
             $query->condition('changed', $filters['minChanged']->getTimestamp(), '>=');
         }
-        if (!empty($filters['maxChanged'])) {
+
+        if (($filters['maxChanged'] ?? null) instanceof DateTime) {
             $query->condition('changed', $filters['maxChanged']->getTimestamp(), '<=');
         }
 
         // Handle type filter (array of types)
-        if (!empty($filters['type'])) {
+        if (isset($filters['type']) && $filters['type'] !== []) {
             $query->condition('type', $filters['type'], 'IN');
         }
 
         // Handle status filter (array of statuses)
-        if (!empty($filters['status'])) {
+        if (isset($filters['status']) && $filters['status'] !== []) {
             $query->condition('status', $filters['status'], 'IN');
         }
 
         // Handle skipped filter
-        if (isset($filters['skipped']) && $filters['skipped'] !== null) {
-            $query->condition('skipped', $filters['skipped'] ? 1 : 0);
+        if (isset($filters['skipped'])) {
+            $query->condition('skipped', (bool)$filters['skipped'] ? 1 : 0);
         }
     }
 
@@ -758,14 +787,14 @@ class JobRepository implements QueueInterface
      * Apply search filter to a query.
      *
      * @param mixed $query
-     *   The entity query.
-     * @param array $filters
-     *   The filters containing search parameters.
+     *   The entity query
+     * @param array<string,mixed> $filters
+     *   The filters containing search parameters
      */
     protected function applySearchFilter($query, array $filters): void
     {
         $search = $filters['search'];
-        $advancedSearch = $filters['advancedSearch'] ?? false;
+        $advancedSearch = (bool)($filters['advancedSearch'] ?? false);
         $searchFields = $filters['searchFields'] ?? ['label', 'type', 'hash', 'status_message'];
 
         if ($advancedSearch) {
@@ -794,9 +823,9 @@ class JobRepository implements QueueInterface
      * Apply pagination to a query.
      *
      * @param mixed $query
-     *   The entity query.
-     * @param array|null $navigation
-     *   The navigation parameters.
+     *   The entity query
+     * @param array<string,mixed>|null $navigation
+     *   The navigation parameters
      */
     protected function applyPagination($query, ?array $navigation): void
     {
@@ -821,9 +850,9 @@ class JobRepository implements QueueInterface
      * Apply sorting to a query.
      *
      * @param mixed $query
-     *   The entity query.
-     * @param array|null $navigation
-     *   The navigation parameters.
+     *   The entity query
+     * @param array<string,mixed>|null $navigation
+     *   The navigation parameters
      */
     protected function applySorting($query, ?array $navigation): void
     {
@@ -838,9 +867,9 @@ class JobRepository implements QueueInterface
      * Apply navigation (pagination/sorting) to a query.
      *
      * @param mixed $query
-     *   The entity query.
-     * @param array|null $navigation
-     *   The navigation parameters.
+     *   The entity query
+     * @param array<string,mixed>|null $navigation
+     *   The navigation parameters
      */
     protected function applyNavigation($query, ?array $navigation): void
     {

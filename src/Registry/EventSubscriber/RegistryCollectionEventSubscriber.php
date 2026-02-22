@@ -16,7 +16,7 @@ class RegistryCollectionEventSubscriber implements EventSubscriberInterface
      * Constructs a RegistryCollectionEventSubscriber object.
      *
      * @param Registry $registry
-     *   The distributor registry.
+     *   The distributor registry
      */
     public function __construct(
         protected Registry $registry,
@@ -36,8 +36,8 @@ class RegistryCollectionEventSubscriber implements EventSubscriberInterface
     /**
      * Handles registry collection update event.
      *
-     * @param \Drupal\dmf_core\Registry\Event\RegistryCollectionEvent $event
-     *   The event.
+     * @param RegistryCollectionEvent $event
+     *   The event
      */
     public function onRegistryCollectionUpdate(RegistryCollectionEvent $event): void
     {

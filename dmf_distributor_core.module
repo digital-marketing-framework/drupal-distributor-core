@@ -4,7 +4,7 @@
  * @file
  * Anyrel Distributor Core module functions.
  */
-
+use Drupal\dmf_core\Registry\RegistryCollection;
 use DigitalMarketingFramework\Distributor\Core\Registry\RegistryInterface;
 use Drupal\dmf_distributor_core\Queue\GlobalConfiguration\Settings\QueueSettings;
 
@@ -18,8 +18,8 @@ use Drupal\dmf_distributor_core\Queue\GlobalConfiguration\Settings\QueueSettings
  */
 function dmf_distributor_core_cron(): void {
   try {
-    /** @var \Drupal\dmf_core\Registry\RegistryCollection $registryCollection */
-    $registryCollection = \Drupal::service('dmf_core.registry_collection');
+    /** @var RegistryCollection $registryCollection */
+    $registryCollection = Drupal::service('dmf_core.registry_collection');
 
     /** @var RegistryInterface $registry */
     $registry = $registryCollection->getRegistryByClass(RegistryInterface::class);
@@ -34,7 +34,7 @@ function dmf_distributor_core_cron(): void {
     }
 
     // Check minimum interval since last run.
-    $lastRun = \Drupal::state()->get('dmf_distributor_core.last_cron_run', 0);
+    $lastRun = Drupal::state()->get('dmf_distributor_core.last_cron_run', 0);
     $minInterval = $queueSettings->getCronMinInterval();
 
     if (time() - $lastRun < $minInterval) {
@@ -42,7 +42,7 @@ function dmf_distributor_core_cron(): void {
     }
 
     // Update timestamp before processing.
-    \Drupal::state()->set('dmf_distributor_core.last_cron_run', time());
+    Drupal::state()->set('dmf_distributor_core.last_cron_run', time());
 
     // Process the queue.
     $queueProcessor = $registry->getQueueProcessor(
@@ -51,8 +51,8 @@ function dmf_distributor_core_cron(): void {
     );
     $queueProcessor->updateJobsAndProcessBatch();
   }
-  catch (\Exception $e) {
-    \Drupal::logger('dmf_distributor_core')->error(
+  catch (Exception $e) {
+    Drupal::logger('dmf_distributor_core')->error(
       'Error processing distribution queue during cron: @message',
       ['@message' => $e->getMessage()]
     );

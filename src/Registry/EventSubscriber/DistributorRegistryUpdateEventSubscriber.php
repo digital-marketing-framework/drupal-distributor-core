@@ -17,10 +17,10 @@ class DistributorRegistryUpdateEventSubscriber extends AbstractDistributorRegist
     /**
      * Constructs a DistributorRegistryUpdateEventSubscriber object.
      *
-     * @param \Drupal\dmf_distributor_core\Entity\JobRepository $queue
-     *   The job repository (queue).
-     * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
-     *   The entity type manager.
+     * @param JobRepository $queue
+     *   The job repository (queue)
+     * @param EntityTypeManagerInterface $entityTypeManager
+     *   The entity type manager
      */
     public function __construct(
         protected JobRepository $queue,

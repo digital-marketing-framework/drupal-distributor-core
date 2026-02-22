@@ -15,6 +15,10 @@ class JobForm extends ContentEntityForm
 {
     /**
      * {@inheritdoc}
+     *
+     * @param array<mixed> $form
+     *
+     * @return array<mixed>
      */
     public function form(array $form, FormStateInterface $form_state): array
     {
@@ -35,7 +39,7 @@ class JobForm extends ContentEntityForm
             '#title' => $this->t('General'),
             '#group' => 'tabs',
             '#weight' => 0,
-            '#open' => TRUE,
+            '#open' => true,
         ];
 
         $form['general']['label'] = [
@@ -163,6 +167,10 @@ class JobForm extends ContentEntityForm
 
     /**
      * {@inheritdoc}
+     *
+     * @param array<mixed> $form
+     *
+     * @return array<mixed>
      */
     protected function actions(array $form, FormStateInterface $form_state): array
     {
@@ -219,17 +227,21 @@ class JobForm extends ContentEntityForm
 
     /**
      * Form submission handler for "Save and continue editing".
+     *
+     * @param array<mixed> $form
      */
     public function saveAndContinue(array $form, FormStateInterface $form_state): void
     {
         $editUrl = $this->getEditUrl($form_state);
-        if ($editUrl) {
+        if ($editUrl !== '') {
             $form_state->setRedirectUrl(Url::fromUserInput($editUrl));
         }
     }
 
     /**
      * {@inheritdoc}
+     *
+     * @param array<mixed> $form
      */
     public function save(array $form, FormStateInterface $form_state): int
     {

@@ -7,6 +7,7 @@ use DigitalMarketingFramework\Core\Model\Queue\JobInterface;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use JsonException;
 
 /**
  * Defines the Distributor Job entity.
@@ -39,69 +40,69 @@ class Job extends ContentEntityBase implements JobInterface
         $fields = parent::baseFieldDefinitions($entity_type);
 
         $fields['environment'] = BaseFieldDefinition::create('string')
-            ->setLabel(t('Environment'))
-            ->setDescription(t('The environment identifier'))
-            ->setDefaultValue('')
-            ->setSettings([
-                'max_length' => 255,
-            ]);
+          ->setLabel(t('Environment'))
+          ->setDescription(t('The environment identifier'))
+          ->setDefaultValue('')
+          ->setSettings([
+              'max_length' => 255,
+          ]);
 
         $fields['created'] = BaseFieldDefinition::create('created')
-            ->setLabel(t('Created'))
-            ->setDescription(t('The time that the job was created'));
+          ->setLabel(t('Created'))
+          ->setDescription(t('The time that the job was created'));
 
         $fields['changed'] = BaseFieldDefinition::create('changed')
-            ->setLabel(t('Changed'))
-            ->setDescription(t('The time that the job was last changed'));
+          ->setLabel(t('Changed'))
+          ->setDescription(t('The time that the job was last changed'));
 
         $fields['status'] = BaseFieldDefinition::create('integer')
-            ->setLabel(t('Status'))
-            ->setDescription(t('The job status'))
-            ->setDefaultValue(0);
+          ->setLabel(t('Status'))
+          ->setDescription(t('The job status'))
+          ->setDefaultValue(0);
 
         $fields['skipped'] = BaseFieldDefinition::create('boolean')
-            ->setLabel(t('Skipped'))
-            ->setDescription(t('Whether the job was skipped'))
-            ->setDefaultValue(FALSE);
+          ->setLabel(t('Skipped'))
+          ->setDescription(t('Whether the job was skipped'))
+          ->setDefaultValue(false);
 
         $fields['status_message'] = BaseFieldDefinition::create('string_long')
-            ->setLabel(t('Status Message'))
-            ->setDescription(t('Status message text'))
-            ->setDefaultValue('');
+          ->setLabel(t('Status Message'))
+          ->setDescription(t('Status message text'))
+          ->setDefaultValue('');
 
         $fields['serialized_data'] = BaseFieldDefinition::create('string_long')
-            ->setLabel(t('Serialized Data'))
-            ->setDescription(t('Serialized job data'))
-            ->setDefaultValue('');
+          ->setLabel(t('Serialized Data'))
+          ->setDescription(t('Serialized job data'))
+          ->setDefaultValue('');
 
         $fields['hash'] = BaseFieldDefinition::create('string')
-            ->setLabel(t('Hash'))
-            ->setDescription(t('Job hash'))
-            ->setDefaultValue('')
-            ->setSettings([
-                'max_length' => 255,
-            ]);
+          ->setLabel(t('Hash'))
+          ->setDescription(t('Job hash'))
+          ->setDefaultValue('')
+          ->setSettings([
+              'max_length' => 255,
+          ]);
 
         $fields['label'] = BaseFieldDefinition::create('string')
-            ->setLabel(t('Label'))
-            ->setDescription(t('Job label'))
-            ->setDefaultValue('')
-            ->setSettings([
-                'max_length' => 255,
-            ]);
+          ->setLabel(t('Label'))
+          ->setDescription(t('Job label'))
+          ->setDefaultValue('')
+          ->setSettings([
+              'max_length' => 255,
+          ]);
 
         $fields['type'] = BaseFieldDefinition::create('string')
-            ->setLabel(t('Type'))
-            ->setDescription(t('Job type'))
-            ->setDefaultValue('')
-            ->setSettings([
-                'max_length' => 255,
-            ]);
+          ->setLabel(t('Type'))
+          ->setDescription(t('Job type'))
+          ->setDefaultValue('')
+          ->setSettings([
+              'max_length' => 255,
+          ]);
 
         $fields['retry_amount'] = BaseFieldDefinition::create('integer')
-            ->setLabel(t('Retry Amount'))
-            ->setDescription(t('Number of retry attempts'))
-            ->setDefaultValue(0);
+          ->setLabel(t('Retry Amount'))
+          ->setDescription(t('Number of retry attempts'))
+          ->setDefaultValue(0);
 
         return $fields;
     }
@@ -159,7 +160,7 @@ class Job extends ContentEntityBase implements JobInterface
      */
     public function getStatus(): int
     {
-        return (int) $this->get('status')->value;
+        return (int)$this->get('status')->value;
     }
 
     /**
@@ -175,7 +176,7 @@ class Job extends ContentEntityBase implements JobInterface
      */
     public function getSkipped(): bool
     {
-        return (bool) $this->get('skipped')->value;
+        return (bool)$this->get('skipped')->value;
     }
 
     /**
@@ -240,7 +241,7 @@ class Job extends ContentEntityBase implements JobInterface
 
         try {
             return json_decode($data, associative: true, flags: JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
+        } catch (JsonException) {
             return [];
         }
     }
@@ -252,7 +253,7 @@ class Job extends ContentEntityBase implements JobInterface
     {
         try {
             $serializedData = json_encode($data, flags: JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
+        } catch (JsonException) {
             $serializedData = '';
         }
 
@@ -328,7 +329,7 @@ class Job extends ContentEntityBase implements JobInterface
      */
     public function getRetryAmount(): int
     {
-        return (int) $this->get('retry_amount')->value;
+        return (int)$this->get('retry_amount')->value;
     }
 
     /**

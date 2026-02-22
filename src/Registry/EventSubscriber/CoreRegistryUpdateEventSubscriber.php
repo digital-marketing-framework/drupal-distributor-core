@@ -9,6 +9,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\dmf_core\Registry\EventSubscriber\AbstractCoreRegistryUpdateEventSubscriber;
 use Drupal\dmf_distributor_core\Backend\Controller\SectionController\DistributorEditSectionController;
+use Drupal\dmf_distributor_core\Backend\UriRouteResolver\DrupalWebformDataSourceEditUriRouteResolver;
 use Drupal\dmf_distributor_core\GlobalConfiguration\Schema\DistributorCoreGlobalConfigurationSchema;
 
 /**
@@ -37,6 +38,9 @@ class CoreRegistryUpdateEventSubscriber extends AbstractCoreRegistryUpdateEventS
     protected function initPlugins(RegistryInterface $registry): void
     {
         parent::initPlugins($registry);
+
+        // Register Drupal URI route resolvers
+        $registry->registerBackendUriRouteResolver(DrupalWebformDataSourceEditUriRouteResolver::class);
 
         // Register Drupal distributor edit section controller with Drupal services
         $registry->registerBackendSectionController(

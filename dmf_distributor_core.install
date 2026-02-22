@@ -4,7 +4,7 @@
  * @file
  * Install, update and uninstall functions for the DMF Distributor Core module.
  */
-
+use Drupal\Core\Entity\EntityTypeListenerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
 /**
@@ -12,11 +12,11 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
  */
 function dmf_distributor_core_install() {
   // Ensure the dmf_distributor_job entity schema is created.
-  $entity_type_manager = \Drupal::entityTypeManager();
+  $entity_type_manager = Drupal::entityTypeManager();
   $entity_type = $entity_type_manager->getDefinition('dmf_distributor_job');
 
-  /** @var \Drupal\Core\Entity\EntityTypeListenerInterface $entity_type_listener */
-  $entity_type_listener = \Drupal::service('entity_type.listener');
+  /** @var EntityTypeListenerInterface $entity_type_listener */
+  $entity_type_listener = Drupal::service('entity_type.listener');
   $entity_type_listener->onEntityTypeCreate($entity_type);
 }
 
@@ -25,16 +25,16 @@ function dmf_distributor_core_install() {
  */
 function dmf_distributor_core_uninstall() {
   // Clean up the dmf_distributor_job entity schema.
-  $entity_type_manager = \Drupal::entityTypeManager();
+  $entity_type_manager = Drupal::entityTypeManager();
 
   try {
     $entity_type = $entity_type_manager->getDefinition('dmf_distributor_job');
 
-    /** @var \Drupal\Core\Entity\EntityTypeListenerInterface $entity_type_listener */
-    $entity_type_listener = \Drupal::service('entity_type.listener');
+    /** @var EntityTypeListenerInterface $entity_type_listener */
+    $entity_type_listener = Drupal::service('entity_type.listener');
     $entity_type_listener->onEntityTypeDelete($entity_type);
   }
-  catch (\Exception $e) {
+  catch (Exception) {
     // Entity type might already be gone, which is fine.
   }
 }
