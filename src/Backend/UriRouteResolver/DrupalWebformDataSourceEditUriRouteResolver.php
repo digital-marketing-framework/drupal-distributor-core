@@ -33,9 +33,20 @@ class DrupalWebformDataSourceEditUriRouteResolver extends UriRouteResolver
         $identifier = (string)($arguments['identifier'] ?? '');
         $returnUrl = $this->getReturnUrl($arguments);
 
-        $webformId = substr($identifier, 8);
+        // Parse identifier: "webform:<webformId>:<handlerId>" or legacy "webform:<webformId>"
+        $innerIdentifier = substr($identifier, 8);
+        $parts = explode(':', $innerIdentifier, 2);
+        $webformId = $parts[0];
+        $handlerId = $parts[1] ?? null;
 
-        $url = Url::fromRoute('entity.webform.handlers', ['webform' => $webformId]);
+        if ($handlerId !== null) {
+            $url = Url::fromRoute('entity.webform.handler.edit_form', [
+                'webform' => $webformId,
+                'webform_handler' => $handlerId,
+            ]);
+        } else {
+            $url = Url::fromRoute('entity.webform.handlers', ['webform' => $webformId]);
+        }
 
         if ($returnUrl !== '') {
             $url->setOption('query', ['destination' => $returnUrl]);

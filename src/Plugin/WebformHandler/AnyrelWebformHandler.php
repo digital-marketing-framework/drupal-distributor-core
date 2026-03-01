@@ -89,10 +89,11 @@ class AnyrelWebformHandler extends WebformHandlerBase
         $coreRegistry = $this->registryCollection->getRegistryByClass(CoreRegistryInterface::class);
         $renderingService = $coreRegistry->getBackendRenderingService();
 
-        // Build context identifier for this webform (webform:webform_id).
+        // Build context identifier for this webform handler (webform:webform_id:handler_id).
         $webformId = $this->getWebform()->id() ?? 'new';
-        $contextIdentifier = 'webform:' . $webformId;
-        $uid = 'configuration-document:webform:' . $webformId;
+        $handlerId = $this->getHandlerId();
+        $contextIdentifier = 'webform:' . $webformId . ':' . $handlerId;
+        $uid = 'configuration-document:webform:' . $webformId . ':' . $handlerId;
 
         // Get configuration editor data attributes.
         $dataAttributes = $renderingService->getTextAreaDataAttributes(
@@ -158,8 +159,8 @@ class AnyrelWebformHandler extends WebformHandlerBase
         // Get form submission data (pass through as-is)
         $formData = $webform_submission->getData();
 
-        // Build data source ID (webform:webform_id)
-        $dataSourceId = 'webform:' . $webform_submission->getWebform()->id();
+        // Build data source ID (webform:webform_id:handler_id)
+        $dataSourceId = 'webform:' . $webform_submission->getWebform()->id() . ':' . $this->getHandlerId();
 
         // Build and process submission
         $submission = new SubmissionDataSet($dataSourceId, $formData, $configurationStack);

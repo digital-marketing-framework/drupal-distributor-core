@@ -15,8 +15,8 @@ use Drupal\webform\WebformInterface;
  * Data source storage for Drupal webforms.
  *
  * This storage plugin provides access to webforms that have the Anyrel
- * handler configured. It allows the job processor to load the configuration
- * document for a given webform submission.
+ * handler configured. Each Anyrel handler on a webform is a separate
+ * data source, identified by webform:<webformId>:<handlerId>.
  *
  * @extends DistributorDataSourceStorage<DrupalWebformDataSource>
  */
@@ -49,6 +49,29 @@ class DrupalWebformDataSourceStorage extends DistributorDataSourceStorage
     }
 
     /**
+     * Parses the inner identifier into webform ID and handler ID.
+     *
+     * Supports both the current format (webformId:handlerId) and the
+     * legacy format (webformId only, without handler ID).
+     *
+     * @param string $identifier
+     *   The full data source identifier (e.g. "webform:my_form:anyrel")
+     *
+     * @return array{webformId:string,handlerId:?string}
+     *   The parsed parts
+     */
+    protected function parseIdentifier(string $identifier): array
+    {
+        $innerIdentifier = $this->getInnerIdentifier($identifier);
+        $parts = explode(':', $innerIdentifier, 2);
+
+        return [
+            'webformId' => $parts[0],
+            'handlerId' => $parts[1] ?? null,
+        ];
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function getDataSourceByIdentifier(string $identifier): ?DistributorDataSourceInterface
@@ -57,16 +80,23 @@ class DrupalWebformDataSourceStorage extends DistributorDataSourceStorage
             return null;
         }
 
-        $webformId = $this->getInnerIdentifier($identifier);
-        $webform = $this->loadWebform($webformId);
+        ['webformId' => $webformId, 'handlerId' => $handlerId] = $this->parseIdentifier($identifier);
 
+        $webform = $this->loadWebform($webformId);
         if (!$webform instanceof WebformInterface) {
             return null;
         }
 
-        $configurationDocument = $this->getConfigurationDocument($webform);
+        // Find the specific handler, or fall back to first handler for legacy identifiers.
+        $handler = $handlerId !== null
+            ? $this->getAnyrelHandlerById($webform, $handlerId)
+            : $this->getFirstAnyrelHandler($webform);
 
-        return new DrupalWebformDataSource($webformId, $webform, $configurationDocument);
+        if (!$handler instanceof AnyrelWebformHandler) {
+            return null;
+        }
+
+        return $this->createDataSource($webformId, $handler, $webform);
     }
 
     /**
@@ -79,13 +109,39 @@ class DrupalWebformDataSourceStorage extends DistributorDataSourceStorage
         $webforms = $this->entityTypeManager->getStorage('webform')->loadMultiple();
 
         foreach ($webforms as $id => $webform) {
-            if ($this->hasAnyrelHandler($webform)) {
-                $configurationDocument = $this->getConfigurationDocument($webform);
-                $result[] = new DrupalWebformDataSource($id, $webform, $configurationDocument);
+            foreach ($this->getAnyrelHandlers($webform) as $handler) {
+                $result[] = $this->createDataSource($id, $handler, $webform);
             }
         }
 
         return $result;
+    }
+
+    /**
+     * Creates a DrupalWebformDataSource from a webform and handler.
+     *
+     * @param string $webformId
+     *   The webform ID (machine name)
+     * @param AnyrelWebformHandler $handler
+     *   The Anyrel handler instance
+     * @param WebformInterface $webform
+     *   The webform entity
+     *
+     * @return DrupalWebformDataSource
+     *   The data source object
+     */
+    protected function createDataSource(string $webformId, AnyrelWebformHandler $handler, WebformInterface $webform): DrupalWebformDataSource
+    {
+        $configuration = $handler->getConfiguration();
+        $configurationDocument = $configuration['settings']['configuration_document'] ?? '';
+
+        return new DrupalWebformDataSource(
+            $webformId,
+            $handler->getHandlerId(),
+            $webform,
+            $handler->label(),
+            $configurationDocument
+        );
     }
 
     /**
@@ -105,35 +161,43 @@ class DrupalWebformDataSourceStorage extends DistributorDataSourceStorage
     }
 
     /**
-     * Checks if a webform has the Anyrel handler configured.
+     * Gets all Anyrel handlers from a webform.
      *
      * @param WebformInterface $webform
      *   The webform entity
      *
-     * @return bool
-     *   TRUE if the webform has Anyrel handler, FALSE otherwise
+     * @return AnyrelWebformHandler[]
+     *   All Anyrel handler instances on the webform
      */
-    protected function hasAnyrelHandler(WebformInterface $webform): bool
+    protected function getAnyrelHandlers(WebformInterface $webform): array
     {
-        $handler = $this->getAnyrelHandler($webform);
-
-        return $handler instanceof AnyrelWebformHandler;
-    }
-
-    /**
-     * Gets the Anyrel handler from a webform.
-     *
-     * @param WebformInterface $webform
-     *   The webform entity
-     *
-     * @return AnyrelWebformHandler|null
-     *   The Anyrel handler, or NULL if not configured
-     */
-    protected function getAnyrelHandler(WebformInterface $webform): ?AnyrelWebformHandler
-    {
+        $result = [];
         $handlers = $webform->getHandlers();
         foreach ($handlers as $handler) {
             if ($handler instanceof AnyrelWebformHandler) {
+                $result[] = $handler;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Gets a specific Anyrel handler by its instance ID.
+     *
+     * @param WebformInterface $webform
+     *   The webform entity
+     * @param string $handlerId
+     *   The handler instance ID (e.g. "anyrel", "anyrel_1")
+     *
+     * @return AnyrelWebformHandler|null
+     *   The handler, or NULL if not found
+     */
+    protected function getAnyrelHandlerById(WebformInterface $webform, string $handlerId): ?AnyrelWebformHandler
+    {
+        $handlers = $webform->getHandlers();
+        foreach ($handlers as $handler) {
+            if ($handler instanceof AnyrelWebformHandler && $handler->getHandlerId() === $handlerId) {
                 return $handler;
             }
         }
@@ -142,24 +206,21 @@ class DrupalWebformDataSourceStorage extends DistributorDataSourceStorage
     }
 
     /**
-     * Gets the configuration document from a webform's Anyrel handler.
+     * Gets the first Anyrel handler from a webform.
+     *
+     * Used as fallback for legacy identifiers without handler ID.
      *
      * @param WebformInterface $webform
      *   The webform entity
      *
-     * @return string
-     *   The YAML configuration document, or empty string if not configured
+     * @return AnyrelWebformHandler|null
+     *   The first Anyrel handler, or NULL if not configured
      */
-    protected function getConfigurationDocument(WebformInterface $webform): string
+    protected function getFirstAnyrelHandler(WebformInterface $webform): ?AnyrelWebformHandler
     {
-        $handler = $this->getAnyrelHandler($webform);
-        if (!$handler instanceof AnyrelWebformHandler) {
-            return '';
-        }
+        $handlers = $this->getAnyrelHandlers($webform);
 
-        $configuration = $handler->getConfiguration();
-
-        return $configuration['settings']['configuration_document'] ?? '';
+        return $handlers[0] ?? null;
     }
 
     /**
@@ -171,14 +232,17 @@ class DrupalWebformDataSourceStorage extends DistributorDataSourceStorage
             return;
         }
 
-        $webformId = $this->getInnerIdentifier($dataSource->getIdentifier());
-        $webform = $this->loadWebform($webformId);
+        ['webformId' => $webformId, 'handlerId' => $handlerId] = $this->parseIdentifier($dataSource->getIdentifier());
 
+        $webform = $this->loadWebform($webformId);
         if (!$webform instanceof WebformInterface) {
             return;
         }
 
-        $handler = $this->getAnyrelHandler($webform);
+        $handler = $handlerId !== null
+            ? $this->getAnyrelHandlerById($webform, $handlerId)
+            : $this->getFirstAnyrelHandler($webform);
+
         if (!$handler instanceof AnyrelWebformHandler) {
             return;
         }

@@ -20,22 +20,29 @@ class DrupalWebformDataSource extends DistributorDataSource
      *
      * @param string $webformId
      *   The webform ID (machine name)
+     * @param string $handlerId
+     *   The Anyrel handler instance ID
      * @param WebformInterface $webform
      *   The webform entity
+     * @param string $handlerLabel
+     *   The handler label for display purposes
      * @param string $configurationDocument
      *   The YAML configuration document from the Anyrel handler
      */
     public function __construct(
         protected string $webformId,
+        protected string $handlerId,
         protected WebformInterface $webform,
+        string $handlerLabel,
         string $configurationDocument,
     ) {
-        $name = $this->webform->label() ?? $webformId;
+        $webformLabel = $this->webform->label() ?? $webformId;
+        $name = $webformLabel . ' (' . $handlerLabel . ')';
         $hash = GeneralUtility::calculateHash($this->webform->getElementsDecoded());
 
         parent::__construct(
             static::TYPE,
-            static::TYPE . ':' . $webformId,
+            static::TYPE . ':' . $webformId . ':' . $handlerId,
             $name,
             $hash,
             $configurationDocument
