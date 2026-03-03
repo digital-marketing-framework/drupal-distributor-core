@@ -2,10 +2,18 @@
 
 namespace Drupal\dmf_distributor_core\Plugin\WebformHandler;
 
+use DateTime;
 use DigitalMarketingFramework\Core\ConfigurationDocument\ConfigurationDocumentManagerInterface;
 use DigitalMarketingFramework\Core\ConfigurationEditor\MetaData;
+use DigitalMarketingFramework\Core\GlobalConfiguration\Settings\CoreSettings;
+use DigitalMarketingFramework\Core\Model\Data\Value\BooleanValue;
+use DigitalMarketingFramework\Core\Model\Data\Value\DateTimeValue;
+use DigitalMarketingFramework\Core\Model\Data\Value\IntegerValue;
+use DigitalMarketingFramework\Core\Model\Data\Value\MultiValue;
+use DigitalMarketingFramework\Core\Model\Data\Value\ValueInterface;
 use DigitalMarketingFramework\Core\Registry\RegistryCollectionInterface;
 use DigitalMarketingFramework\Core\Registry\RegistryInterface as CoreRegistryInterface;
+use DigitalMarketingFramework\Core\Utility\GeneralUtility;
 use DigitalMarketingFramework\Distributor\Core\Model\DataSet\SubmissionDataSet;
 use DigitalMarketingFramework\Distributor\Core\Registry\RegistryInterface as DistributorRegistryInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -147,6 +155,166 @@ class AnyrelWebformHandler extends WebformHandlerBase
     }
 
     /**
+     * @param array<mixed> $formElements
+     *
+     * @return ?array<mixed>
+     */
+    protected function getFieldDefinition(array $formElements, string $fieldName): ?array
+    {
+        if (isset($formElements[$fieldName])) {
+            return $formElements[$fieldName];
+        }
+
+        foreach ($formElements as $name => $config) {
+            if (str_starts_with((string)$name, '#')) {
+                continue;
+            }
+
+            $childConfig = $this->getFieldDefinition($config, $fieldName);
+
+            if ($childConfig !== null) {
+                return $childConfig;
+            }
+        }
+
+        return null;
+    }
+
+    protected function getDefaultTimezone(): string
+    {
+        return $this->distributorRegistry->getGlobalConfiguration()
+          ->getGlobalSettings(CoreSettings::class)
+          ->getDefaultTimezone();
+    }
+
+    /**
+     * @param array<mixed> $form
+     */
+    protected function getFormDataField(array &$form, string $key, mixed $value): string|ValueInterface|null
+    {
+        $config = $this->getFieldDefinition($form['elements'] ?? [], $key);
+        if ($config === null) {
+            $this->getLogger('dmf_distributor_core')->error(sprintf('No webform field definition found for field "%s".', $key));
+
+            return null;
+        }
+
+        switch ($config['#type'] ?? '') {
+            case 'checkbox':
+            case 'webform_terms_of_service':
+                return new BooleanValue($value);
+
+            case 'text_format':
+                // Drupal already renders the formatted text, so $value['value'] contains the HTML output.
+                return $value['value'];
+
+            case 'date':
+                if ($value === '') {
+                    return '';
+                }
+
+                $format = $config['#date_date_format'] ?? 'Y-m-d';
+
+                return new DateTimeValue($value, $format, $this->getDefaultTimezone());
+
+            case 'datetime':
+                if ($value === '') {
+                    return '';
+                }
+
+                // Drupal bakes the field's timezone offset into the value string.
+                // Parse it and extract the user's intended date/time, then re-interpret
+                // in Anyrel's default timezone (same approach as TYPO3).
+                $dt = new DateTime($value);
+                $dateString = $dt->format('Y-m-d H:i:s');
+
+                $dateFormat = $config['#date_date_format'] ?? 'Y-m-d';
+                $timeFormat = $config['#date_time_format'] ?? 'H:i:s';
+                $format = $dateFormat . ' ' . $timeFormat;
+
+                return new DateTimeValue($dateString, $format, $this->getDefaultTimezone());
+
+            case 'datelist':
+                if ($value === '') {
+                    return '';
+                }
+
+                // Drupal bakes the field's timezone offset into the value string.
+                // Parse it and extract the user's intended date/time, then re-interpret
+                // in Anyrel's default timezone (same approach as TYPO3).
+                // The format is built from the active parts only (#date_part_order),
+                // since datelist allows arbitrary part combinations.
+                $dt = new DateTime($value);
+                $dateString = $dt->format('Y-m-d H:i:s');
+
+                $datePartVarMap = ['year' => 'Y', 'month' => 'm', 'day' => 'd'];
+                $parts = $config['#date_part_order'] ?? ['year', 'month', 'day'];
+                $dateParts = [];
+                foreach ($datePartVarMap as $part => $var) {
+                    if (in_array($part, $parts, true)) {
+                        $dateParts[] = $var;
+                    }
+                }
+
+                $timePartVarMap = ['hour' => 'H', 'minute' => 'i', 'second' => 's'];
+                $timeParts = [];
+                foreach ($timePartVarMap as $part => $var) {
+                    if (in_array($part, $parts, true)) {
+                        $timeParts[] = $var;
+                    }
+                }
+
+                $format = trim(implode('-', $dateParts) . ' ' . implode(':', $timeParts));
+
+                return new DateTimeValue($dateString, $format, $this->getDefaultTimezone());
+
+            case 'webform_scale':
+                if ($value === null) {
+                    return '';
+                }
+
+                return new IntegerValue($value);
+
+            case 'webform_likert':
+                $multiValue = new MultiValue();
+                foreach ($value as $childKey => $childValue) {
+                    $multiValue[$childKey] = (string)$childValue;
+                }
+
+                return $multiValue;
+
+            default:
+                if ($value === null) {
+                    return '';
+                }
+
+                return GeneralUtility::convertToFieldValue($value);
+        }
+    }
+
+    /**
+     * @param array<mixed> $form
+     *
+     * @return array<string,string|ValueInterface>
+     */
+    protected function getFormData(array &$form, WebformSubmissionInterface $webform_submission): array
+    {
+        $data = [];
+        $formData = $webform_submission->getData();
+        foreach ($formData as $key => $value) {
+            $formattedValue = $this->getFormDataField($form, $key, $value);
+            if ($formattedValue === null) {
+                $this->getLogger('dmf_distributor_core')->warning(sprintf('Skipping unknown field type "%s".', $key));
+                continue;
+            }
+
+            $data[$key] = $formattedValue;
+        }
+
+        return $data;
+    }
+
+    /**
      * {@inheritdoc}
      *
      * @param array<mixed> $form
@@ -157,7 +325,7 @@ class AnyrelWebformHandler extends WebformHandlerBase
         $configurationStack = $this->getConfigurationStack();
 
         // Get form submission data (pass through as-is)
-        $formData = $webform_submission->getData();
+        $formData = $this->getFormData($form, $webform_submission);
 
         // Build data source ID (webform:webform_id:handler_id)
         $dataSourceId = 'webform:' . $webform_submission->getWebform()->id() . ':' . $this->getHandlerId();
