@@ -118,7 +118,9 @@ class DrupalWebformDataSource extends DistributorDataSource
 
         // Extract options for select/checkbox elements.
         $options = $element['#options'] ?? [];
-        if ($options !== []) {
+        if (is_string($options)) {
+            // @todo handle referenced options
+        } elseif ($options !== []) {
             $values = array_keys($options);
         }
 
