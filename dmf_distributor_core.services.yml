@@ -26,12 +26,18 @@ services:
       - { name: event_subscriber }
     public: true
 
-  dmf_distributor_core.event_subscriber.core_registry_update:
-    class: Drupal\dmf_distributor_core\Registry\EventSubscriber\CoreRegistryUpdateEventSubscriber
+  dmf_distributor_core.initialization:
+    class: Drupal\dmf_distributor_core\DrupalDistributorCoreInitialization
     arguments:
+      - '@dmf_distributor_core.job_repository'
       - '@entity.form_builder'
       - '@entity_type.manager'
       - '@renderer'
+
+  dmf_distributor_core.event_subscriber.core_registry_update:
+    class: Drupal\dmf_distributor_core\Registry\EventSubscriber\CoreRegistryUpdateEventSubscriber
+    arguments:
+      - '@dmf_distributor_core.initialization'
     tags:
       - { name: event_subscriber }
     public: true
@@ -39,8 +45,7 @@ services:
   dmf_distributor_core.event_subscriber.distributor_registry_update:
     class: Drupal\dmf_distributor_core\Registry\EventSubscriber\DistributorRegistryUpdateEventSubscriber
     arguments:
-      - '@dmf_distributor_core.job_repository'
-      - '@entity_type.manager'
+      - '@dmf_distributor_core.initialization'
     tags:
       - { name: event_subscriber }
     public: true
