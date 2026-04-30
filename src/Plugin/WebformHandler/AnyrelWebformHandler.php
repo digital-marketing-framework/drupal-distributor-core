@@ -93,7 +93,6 @@ class AnyrelWebformHandler extends WebformHandlerBase
     public function buildConfigurationForm(array $form, FormStateInterface $form_state): array
     {
         // Get core registry for backend rendering service.
-        /** @var CoreRegistryInterface $coreRegistry */
         $coreRegistry = $this->registryCollection->getRegistryByClass(CoreRegistryInterface::class);
         $renderingService = $coreRegistry->getBackendRenderingService();
 
