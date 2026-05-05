@@ -17,6 +17,7 @@ use DigitalMarketingFramework\Core\Utility\GeneralUtility;
 use DigitalMarketingFramework\Distributor\Core\Model\DataSet\SubmissionDataSet;
 use DigitalMarketingFramework\Distributor\Core\Registry\RegistryInterface as DistributorRegistryInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\webform\Plugin\WebformHandlerBase;
 use Drupal\webform\WebformSubmissionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -339,6 +340,24 @@ class AnyrelWebformHandler extends WebformHandlerBase
 
         // Apply response data (sets cookies via PHP setcookie())
         $submission->getContext()->applyResponseData();
+
+        $redirectUrl = $submission->getContext()->getResponseRedirect();
+        if ($redirectUrl !== null && $redirectUrl !== '') {
+            $form_state->setTemporaryValue('anyrel_redirect_url', $redirectUrl);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @param array<mixed> $form
+     */
+    public function confirmForm(array &$form, FormStateInterface $form_state, WebformSubmissionInterface $webform_submission): void
+    {
+        $redirectUrl = $form_state->getTemporaryValue('anyrel_redirect_url');
+        if (is_string($redirectUrl) && $redirectUrl !== '') {
+            $form_state->setResponse(new TrustedRedirectResponse($redirectUrl));
+        }
     }
 
     /**
