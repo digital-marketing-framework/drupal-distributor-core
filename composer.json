@@ -24,8 +24,8 @@
     "homepage": "https://www.mediatis.de",
     "require": {
         "php": "^8.2",
-        "digital-marketing-framework/distributor-core": "^3.3",
-        "digital-marketing-framework/drupal-core": "^1.0.12",
+        "digital-marketing-framework/distributor-core": "^3.7",
+        "digital-marketing-framework/drupal-core": "^1.1",
         "digital-marketing-framework/drupal-template-engine-twig": "^1.0",
         "drupal/core": "^10 || ^11",
         "drupal/webform": "^6.2"
