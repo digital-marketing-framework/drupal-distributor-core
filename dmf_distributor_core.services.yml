@@ -33,6 +33,7 @@ services:
       - '@entity.form_builder'
       - '@entity_type.manager'
       - '@renderer'
+      - '@language_manager'
 
   dmf_distributor_core.event_subscriber.core_registry_update:
     class: Drupal\dmf_distributor_core\Registry\EventSubscriber\CoreRegistryUpdateEventSubscriber
